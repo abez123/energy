@@ -1,5 +1,14 @@
 import { MeiliSearch } from 'meilisearch';
 
+// Palabras clave para productos de ahorro energético
+const ENERGY_SAVING_KEYWORDS = {
+  drives: ['PowerFlex', '525', '753', '755', 'variador', 'drive', 'VFD', 'inverter', 'AC drive'],
+  protection: ['guardamotor', '140M', 'circuit breaker', 'protection', 'motor protection'],
+  reactors: ['reactor', '1321', 'line reactor', 'impedance', 'harmonic', 'filter'],
+  brands: ['Allen Bradley', 'Rockwell', 'AB'],
+  categories: ['Variadores', 'Power', 'Automatización', 'Control Industrial']
+};
+
 // Tipos para productos Rockwell - Estructura real de Meilisearch
 export interface RockwellProduct {
   // Campos originales de Meilisearch
@@ -72,6 +81,18 @@ export class RockwellProductSearch {
     }
   }
 
+  // Extraer HP de texto
+  private extractHP(text: string): number {
+    const hpMatch = text.match(/(\d+(?:\.\d+)?)\s*HP/i);
+    return hpMatch ? parseFloat(hpMatch[1]) : 0;
+  }
+
+  // Extraer amperaje de texto
+  private extractAmps(text: string): number {
+    const ampMatch = text.match(/(\d+(?:\.\d+)?)\s*A(?:MP|MPER)?/i);
+    return ampMatch ? parseFloat(ampMatch[1]) : 0;
+  }
+
   // Mapear producto de Meilisearch a nuestro formato
   private mapProduct(hit: any): RockwellProduct {
     // Calcular inventario total
@@ -133,7 +154,7 @@ export class RockwellProductSearch {
     };
   }
 
-  // Buscar productos por consulta
+  // Buscar productos por consulta - Enfocado en productos de ahorro energético
   async searchProducts(query: string, options?: {
     limit?: number;
     offset?: number;
@@ -146,7 +167,20 @@ export class RockwellProductSearch {
 
     try {
       const index = this.client.index(this.indexName);
-      const searchResult = await index.search(query, {
+      
+      // Mejorar la búsqueda agregando términos relevantes para ahorro energético
+      let enhancedQuery = query;
+      
+      // Si buscan términos genéricos, agregar marcas/modelos específicos
+      if (query.toLowerCase().includes('drive') || query.toLowerCase().includes('variador')) {
+        enhancedQuery = `${query} PowerFlex Allen Bradley 525 753 755`;
+      } else if (query.toLowerCase().includes('guardamotor')) {
+        enhancedQuery = `${query} 140M protection circuit breaker`;
+      } else if (query.toLowerCase().includes('reactor')) {
+        enhancedQuery = `${query} 1321 line impedance harmonic`;
+      }
+      
+      const searchResult = await index.search(enhancedQuery, {
         limit: options?.limit || 20,
         offset: options?.offset || 0,
         filter: options?.filter,
@@ -155,7 +189,28 @@ export class RockwellProductSearch {
       });
 
       // Mapear los resultados al formato esperado
-      const mappedProducts = searchResult.hits.map(hit => this.mapProduct(hit));
+      let mappedProducts = searchResult.hits.map(hit => this.mapProduct(hit));
+      
+      // Filtrar y priorizar productos relevantes para ahorro energético
+      mappedProducts = mappedProducts.sort((a, b) => {
+        // Priorizar productos con precio
+        if (a.price > 0 && b.price === 0) return -1;
+        if (a.price === 0 && b.price > 0) return 1;
+        
+        // Priorizar productos publicados en website
+        if (a.publicado_website && !b.publicado_website) return -1;
+        if (!a.publicado_website && b.publicado_website) return 1;
+        
+        // Priorizar productos con URL de tienda
+        if (a.url_aol && !b.url_aol) return -1;
+        if (!a.url_aol && b.url_aol) return 1;
+        
+        // Priorizar productos con inventario
+        if (a.inventory > 0 && b.inventory === 0) return -1;
+        if (a.inventory === 0 && b.inventory > 0) return 1;
+        
+        return 0;
+      });
 
       return {
         products: mappedProducts,
@@ -202,44 +257,103 @@ export class RockwellProductSearch {
   }): Promise<ProductRecommendation[]> {
     const recommendations: ProductRecommendation[] = [];
     
-    // Buscar drives apropiados
-    const driveQuery = `PowerFlex ${params.hpPerMotor}HP drive VFD`;
-    const driveResults = await this.searchProducts(driveQuery, { limit: 5 });
+    // 1. DRIVES/VARIADORES - Búsquedas específicas para ahorro energético
+    // Primero buscar PowerFlex específico para el HP requerido
+    let driveQuery = `PowerFlex ${params.hpPerMotor}HP`;
+    let driveResults = await this.searchProducts(driveQuery, { limit: 3 });
+    
+    // Si no hay resultados específicos, buscar PowerFlex general y filtrar
+    if (driveResults.products.length === 0) {
+      driveQuery = 'PowerFlex 525 753 755 variador drive';
+      driveResults = await this.searchProducts(driveQuery, { limit: 10 });
+      
+      // Filtrar por HP más cercano
+      driveResults.products = driveResults.products.filter(p => {
+        const productHP = this.extractHP(p.name + ' ' + p.description);
+        return productHP > 0 && Math.abs(productHP - params.hpPerMotor) <= 5;
+      }).slice(0, 3);
+    }
     
     driveResults.products.forEach(product => {
+      const productHP = this.extractHP(product.name + ' ' + product.description);
       recommendations.push({
         product,
-        reason: `Drive recomendado para motor de ${params.hpPerMotor} HP`,
-        compatibility: 'perfect',
+        reason: `Variador PowerFlex para motor ${params.hpPerMotor}HP - Ahorro energético del 30%`,
+        compatibility: productHP === params.hpPerMotor ? 'perfect' : 'good',
         savings: params.hpPerMotor * 746 * 0.3 * 2500 * 0.1, // Estimación de ahorro
       });
     });
 
-    // Buscar guardamotores
-    const protectionQuery = `guardamotor circuit breaker ${params.hpPerMotor}HP`;
-    const protectionResults = await this.searchProducts(protectionQuery, { limit: 3 });
+    // 2. GUARDAMOTORES - Protección y eficiencia
+    // Calcular amperaje aproximado basado en HP (HP * 1.5 para 480V)
+    const estimatedAmps = Math.ceil(params.hpPerMotor * 1.5);
+    
+    let protectionQuery = `guardamotor ${estimatedAmps}A 140M`;
+    let protectionResults = await this.searchProducts(protectionQuery, { limit: 2 });
+    
+    if (protectionResults.products.length === 0) {
+      protectionQuery = 'guardamotor motor protection circuit breaker 140M';
+      protectionResults = await this.searchProducts(protectionQuery, { limit: 5 });
+      
+      // Filtrar por amperaje cercano
+      protectionResults.products = protectionResults.products.filter(p => {
+        const productAmps = this.extractAmps(p.name + ' ' + p.description);
+        return productAmps > 0 && productAmps >= estimatedAmps * 0.8 && productAmps <= estimatedAmps * 1.5;
+      }).slice(0, 2);
+    }
     
     protectionResults.products.forEach(product => {
       recommendations.push({
         product,
-        reason: 'Protección esencial para el motor',
+        reason: `Guardamotor para protección integral - Reduce paros no programados`,
         compatibility: 'perfect',
       });
     });
 
-    // Buscar reactores
-    const reactorQuery = `line reactor ${params.hpPerMotor}HP harmonic filter`;
-    const reactorResults = await this.searchProducts(reactorQuery, { limit: 3 });
+    // 3. REACTORES DE LÍNEA - Calidad de energía
+    let reactorQuery = `reactor línea line 1321 ${estimatedAmps}A`;
+    let reactorResults = await this.searchProducts(reactorQuery, { limit: 2 });
+    
+    if (reactorResults.products.length === 0) {
+      reactorQuery = 'reactor 1321 line impedance harmonic';
+      reactorResults = await this.searchProducts(reactorQuery, { limit: 5 });
+      
+      // Filtrar por amperaje apropiado
+      reactorResults.products = reactorResults.products.filter(p => {
+        const productAmps = this.extractAmps(p.name + ' ' + p.description);
+        return productAmps > 0 && productAmps >= estimatedAmps;
+      }).slice(0, 2);
+    }
     
     reactorResults.products.forEach(product => {
       recommendations.push({
         product,
-        reason: 'Reduce armónicos y mejora la eficiencia',
+        reason: `Reactor de línea - Mejora calidad de energía y prolonga vida del equipo`,
         compatibility: 'good',
       });
     });
 
-    return recommendations;
+    // Si no hay suficientes productos, buscar más genéricos
+    if (recommendations.length < 3) {
+      const genericQuery = 'Allen Bradley Rockwell automation drive motor control';
+      const genericResults = await this.searchProducts(genericQuery, { limit: 5 });
+      
+      genericResults.products.forEach(product => {
+        // Solo agregar si es relevante para ahorro energético
+        if (product.category?.toLowerCase().includes('variador') || 
+            product.category?.toLowerCase().includes('power') ||
+            product.name?.toLowerCase().includes('powerflex') ||
+            product.name?.toLowerCase().includes('drive')) {
+          recommendations.push({
+            product,
+            reason: 'Producto complementario para sistema de ahorro energético',
+            compatibility: 'compatible',
+          });
+        }
+      });
+    }
+
+    return recommendations.slice(0, 10); // Máximo 10 recomendaciones
   }
 
   // Calcular precio total del paquete
