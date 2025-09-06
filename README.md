@@ -5,8 +5,9 @@
 **Objetivo**: Proporcionar una herramienta interactiva para calcular el retorno de inversión (ROI) y los ahorros potenciales al implementar soluciones de eficiencia energética con drives, reactores y guardamotores.
 
 ## 🌐 URLs de Acceso
-- **Desarrollo (Sandbox)**: https://3000-iatagrmdafp5tkpz5ryxg-6532622b.e2b.dev
+- **Producción (Cloudflare Pages)**: https://energy-calculator-absa.pages.dev
 - **Producción (Cloudflare Worker)**: https://energy-calculator.hola-245.workers.dev
+- **Desarrollo (Sandbox)**: https://3000-iatagrmdafp5tkpz5ryxg-6532622b.e2b.dev
 - **GitHub**: Pendiente de configuración
 
 ## ✅ Funcionalidades Completadas
