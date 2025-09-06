@@ -533,6 +533,14 @@ const EnergyCalculator = () => {
                                                 rec.savings && h('p', { className: 'text-xs text-green-600 mt-1' },
                                                     h('i', { className: 'fas fa-dollar-sign mr-1' }),
                                                     'Ahorro estimado: $' + rec.savings.toFixed(0) + '/año'
+                                                ),
+                                                product.url_aol && h('a', { 
+                                                    href: product.url_aol, 
+                                                    target: '_blank',
+                                                    className: 'inline-block mt-2 px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition'
+                                                },
+                                                    h('i', { className: 'fas fa-shopping-cart mr-1' }),
+                                                    'Ver en Tienda'
                                                 )
                                             )
                                         );

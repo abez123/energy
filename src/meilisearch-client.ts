@@ -1,7 +1,29 @@
 import { MeiliSearch } from 'meilisearch';
 
-// Tipos para productos Rockwell
+// Tipos para productos Rockwell - Estructura real de Meilisearch
 export interface RockwellProduct {
+  // Campos originales de Meilisearch
+  id_item: number;
+  item_proveedor: string;
+  nombre: string;
+  descripcion: string;
+  marca?: string;
+  proveedor?: string;
+  publicado_website: boolean;
+  items_absa?: string;
+  unidad_inventario?: string;
+  website_description?: string;
+  marca_tematica?: string;
+  categorias_website?: string[];
+  guadalajara?: number;
+  leon?: number;
+  chihuahua?: number;
+  hermosillo?: number;
+  juarez?: number;
+  sale_price_usd?: string;
+  url_aol?: string;
+  
+  // Campos mapeados para compatibilidad con la UI
   id: string;
   sku: string;
   name: string;
@@ -19,9 +41,6 @@ export interface RockwellProduct {
     frequency?: string;
     [key: string]: any;
   };
-  imageUrl?: string;
-  datasheet?: string;
-  relatedProducts?: string[];
 }
 
 export interface ProductSearchResult {
@@ -49,8 +68,69 @@ export class RockwellProductSearch {
         host,
         apiKey,
       });
-      this.indexName = indexName || 'rockwell_products';
+      this.indexName = indexName || 'products';
     }
+  }
+
+  // Mapear producto de Meilisearch a nuestro formato
+  private mapProduct(hit: any): RockwellProduct {
+    // Calcular inventario total
+    const totalInventory = (hit.guadalajara || 0) + (hit.leon || 0) + 
+                          (hit.chihuahua || 0) + (hit.hermosillo || 0) + 
+                          (hit.juarez || 0);
+    
+    // Extraer especificaciones del nombre/descripción
+    const specs: any = {};
+    const nameUpper = (hit.nombre || '').toUpperCase();
+    const descUpper = (hit.descripcion || '').toUpperCase();
+    
+    // Buscar HP en el nombre o descripción
+    const hpMatch = (nameUpper + ' ' + descUpper).match(/(\d+(?:\.\d+)?)\s*HP/);
+    if (hpMatch) specs.power = hpMatch[1] + ' HP';
+    
+    // Buscar voltaje
+    const voltMatch = (nameUpper + ' ' + descUpper).match(/(\d+)\s*V(?:AC|DC)?/);
+    if (voltMatch) specs.voltage = voltMatch[1] + 'V AC';
+    
+    // Buscar amperaje
+    const ampMatch = (nameUpper + ' ' + descUpper).match(/(\d+(?:\.\d+)?)\s*A(?:MP)?/);
+    if (ampMatch) specs.current = ampMatch[1] + ' A';
+
+    return {
+      // Campos originales
+      id_item: hit.id_item,
+      item_proveedor: hit.item_proveedor || '',
+      nombre: hit.nombre || '',
+      descripcion: hit.descripcion || '',
+      marca: hit.marca,
+      proveedor: hit.proveedor,
+      publicado_website: hit.publicado_website || false,
+      items_absa: hit.items_absa,
+      unidad_inventario: hit.unidad_inventario,
+      website_description: hit.website_description,
+      marca_tematica: hit.marca_tematica,
+      categorias_website: hit.categorias_website || [],
+      guadalajara: hit.guadalajara,
+      leon: hit.leon,
+      chihuahua: hit.chihuahua,
+      hermosillo: hit.hermosillo,
+      juarez: hit.juarez,
+      sale_price_usd: hit.sale_price_usd,
+      url_aol: hit.url_aol,
+      
+      // Campos mapeados para la UI
+      id: String(hit.id_item),
+      sku: hit.item_proveedor || hit.items_absa || String(hit.id_item),
+      name: hit.nombre || 'Producto sin nombre',
+      description: hit.descripcion || hit.website_description || '',
+      category: hit.categorias_website?.[0] || 'General',
+      price: parseFloat(hit.sale_price_usd || '0'),
+      currency: 'USD',
+      inventory: totalInventory,
+      inStock: totalInventory > 0 || hit.publicado_website,
+      manufacturer: hit.marca || hit.marca_tematica || 'Rockwell Automation',
+      specifications: Object.keys(specs).length > 0 ? specs : undefined
+    };
   }
 
   // Buscar productos por consulta
@@ -71,11 +151,14 @@ export class RockwellProductSearch {
         offset: options?.offset || 0,
         filter: options?.filter,
         sort: options?.sort,
-        attributesToHighlight: ['name', 'description'],
+        attributesToHighlight: ['nombre', 'descripcion'],
       });
 
+      // Mapear los resultados al formato esperado
+      const mappedProducts = searchResult.hits.map(hit => this.mapProduct(hit));
+
       return {
-        products: searchResult.hits as RockwellProduct[],
+        products: mappedProducts,
         totalHits: searchResult.estimatedTotalHits || 0,
         processingTime: searchResult.processingTimeMs || 0,
         query: searchResult.query || query,
@@ -93,9 +176,18 @@ export class RockwellProductSearch {
     }
 
     try {
+      // Buscar por item_proveedor o items_absa
       const index = this.client.index(this.indexName);
-      const document = await index.getDocument(sku);
-      return document as RockwellProduct;
+      const searchResult = await index.search(sku, {
+        limit: 1,
+        filter: [`item_proveedor = "${sku}" OR items_absa = "${sku}"`]
+      });
+      
+      if (searchResult.hits.length > 0) {
+        return this.mapProduct(searchResult.hits[0]);
+      }
+      
+      return null;
     } catch (error) {
       console.error('Error fetching product:', error);
       return this.getMockProductBySku(sku);
