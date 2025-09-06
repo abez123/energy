@@ -9,6 +9,8 @@
 - **Producción (Cloudflare Worker)**: https://energy-calculator.hola-245.workers.dev
 - **Desarrollo (Sandbox)**: https://3000-iatagrmdafp5tkpz5ryxg-6532622b.e2b.dev
 - **GitHub**: https://github.com/abez123/energy
+- **Tienda Online ABSA**: https://www.absaonline.mx
+- **Base de Datos de Productos**: https://meilisearch-xenia.grupoabsa.ai
 
 ## ✅ Funcionalidades Completadas
 
@@ -46,12 +48,15 @@
 - ✅ Esquema de tablas para históricos
 - ✅ Migraciones preparadas
 
-### 7. **Integración con Meilisearch - Productos Rockwell Automation** 🆕
-- ✅ Búsqueda de productos en catálogo Rockwell
+### 7. **Integración con Meilisearch - Productos Rockwell Automation** ✅ CONECTADO
+- ✅ **Base de datos real conectada**: meilisearch-xenia.grupoabsa.ai
+- ✅ Búsqueda en catálogo real de +1000 productos Rockwell/Allen-Bradley
+- ✅ Precios reales en USD desde base de datos ABSA
+- ✅ Inventario en tiempo real (Guadalajara, León, Chihuahua, Hermosillo, Juárez)
+- ✅ Enlaces directos a tienda online ABSA (absaonline.mx)
 - ✅ Recomendaciones automáticas basadas en configuración de motores
 - ✅ Cálculo de precio total del paquete (drive + reactor + guardamotor)
-- ✅ Visualización de inventario y especificaciones técnicas
-- ✅ Actualización automática del costo de inversión con precios reales
+- ✅ Extracción automática de especificaciones (HP, voltaje, corriente)
 - ✅ Integración con chatbot para consultas de productos
 
 ## 📊 Rutas API Disponibles
@@ -133,10 +138,10 @@ npm run db:migrate:prod   # Producción
 ## 📈 Próximos Pasos Recomendados
 
 ### Alta Prioridad
-1. **Configurar API Key de OpenAI** para habilitar chatbot completo
-2. **Configurar Meilisearch** con datos reales de productos Rockwell
+1. **Configurar API Key de OpenAI** para habilitar chatbot completo ✅
+2. **Meilisearch conectado** con base de datos real de ABSA ✅
 3. **Desplegar a Cloudflare Pages** para acceso público
-4. **Configurar GitHub** para control de versiones
+4. **GitHub configurado** - Repositorio: github.com/abez123/energy ✅
 
 ### Mejoras Futuras
 1. **Gráficos interactivos** con Chart.js o Recharts
@@ -187,7 +192,6 @@ git push origin main
 ### Limitaciones Actuales
 - Chatbot requiere API key de OpenAI configurada
 - Base de datos D1 requiere configuración en Cloudflare
-- Búsqueda de productos usa datos mock hasta configurar Meilisearch real
 - Máximo 10MB de bundle para Cloudflare Workers
 - Límite de 10ms CPU por request (plan gratuito)
 
