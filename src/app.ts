@@ -125,14 +125,32 @@ const EnergyCalculator = () => {
 
     return h('div', { className: 'min-h-screen bg-gray-50' },
         // Header
-        h('header', { className: 'gradient-bg text-white py-8 px-4' },
+        h('header', { className: 'gradient-bg text-white py-6 px-4' },
             h('div', { className: 'max-w-7xl mx-auto' },
-                h('h1', { className: 'text-3xl font-bold mb-2' },
-                    h('i', { className: 'fas fa-bolt mr-3' }),
-                    'Simulador de Ahorro Energético'
+                h('div', { className: 'flex items-center justify-between mb-4' },
+                    h('div', { className: 'logo-container' },
+                        h('img', { 
+                            src: 'https://grupoabsacdn-1521b.kxcdn.com/web/image/res.company/1/logo?unique=77c3fa7',
+                            alt: 'GrupoABSA Logo',
+                            className: 'logo-img'
+                        }),
+                        h('div', null,
+                            h('h1', { className: 'text-2xl font-bold' }, 'GrupoABSA'),
+                            h('p', { className: 'text-sm opacity-90' }, 'Soluciones Energéticas')
+                        )
+                    ),
+                    h('div', { className: 'text-right' },
+                        h('p', { className: 'text-sm opacity-80' }, 'Calculadora Profesional'),
+                        h('p', { className: 'text-xs opacity-70 mt-1' }, 'Drive + Reactor + Guardamotor')
+                    )
                 ),
-                h('p', { className: 'text-lg opacity-90' }, 'Drive + Reactor + Guardamotor'),
-                h('p', { className: 'text-sm mt-2' }, 'Transforma costos ocultos en ahorros medibles')
+                h('div', { className: 'text-center' },
+                    h('h2', { className: 'text-3xl font-bold mb-2' },
+                        h('i', { className: 'fas fa-bolt mr-3' }),
+                        'Simulador de Ahorro Energético'
+                    ),
+                    h('p', { className: 'text-lg opacity-90' }, 'Transforma costos ocultos en ahorros medibles con ROI claro')
+                )
             )
         ),
 
