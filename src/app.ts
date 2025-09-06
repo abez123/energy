@@ -86,6 +86,7 @@ const EnergyCalculator = () => {
         setChatLoading(true);
 
         try {
+            // Siempre enviar el contexto si hay resultados disponibles
             const response = await fetch('/api/chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -98,10 +99,27 @@ const EnergyCalculator = () => {
             setMessages(prev => [...prev, { role: 'assistant', content: data.response }]);
         } catch (error) {
             console.error('Error:', error);
+            setMessages(prev => [...prev, { 
+                role: 'assistant', 
+                content: 'Lo siento, hubo un error. Por favor intenta de nuevo.' 
+            }]);
         } finally {
             setChatLoading(false);
         }
     };
+    
+    // Actualizar mensaje inicial cuando hay resultados
+    useEffect(() => {
+        if (results && messages.length === 1) {
+            const totalInv = formatNumber(results.totalInvestment);
+            const totalSav = formatNumber(results.totalAnnualSavings);
+            const roi = results.annualROI.toFixed(0);
+            setMessages(prev => [...prev, {
+                role: 'assistant',
+                content: '¡Excelentes resultados! Veo que con una inversión de solo $' + totalInv + ' puedes ahorrar $' + totalSav + ' al año, con un ROI del ' + roi + '%. ¿Te gustaría que analice estos números en detalle o tienes alguna pregunta específica?'
+            }]);
+        }
+    }, [results]);
 
     const exportToPDF = () => {
         if (!results) return;
@@ -388,7 +406,24 @@ const EnergyCalculator = () => {
 
                     // Chat Section
                     h('div', { className: 'bg-white rounded-lg shadow-lg p-6' },
-                        h('h2', { className: 'text-xl font-bold mb-4' }, 'Asistente IA'),
+                        h('h2', { className: 'text-xl font-bold mb-4' }, 
+                            h('i', { className: 'fas fa-robot mr-2' }),
+                            'Asistente IA - Análisis Personalizado'
+                        ),
+                        results && h('div', { className: 'bg-blue-50 border-l-4 border-blue-500 p-3 mb-4' },
+                            h('p', { className: 'text-sm text-blue-800' },
+                                h('i', { className: 'fas fa-lightbulb mr-2' }),
+                                'El asistente tiene acceso a tus cálculos actuales. Pregúntale sobre:'
+                            ),
+                            h('div', { className: 'flex flex-wrap gap-2 mt-2' },
+                                h('span', { className: 'text-xs bg-white px-2 py-1 rounded cursor-pointer hover:bg-blue-100' }, 
+                                    '¿Por qué mi ROI es tan alto?'),
+                                h('span', { className: 'text-xs bg-white px-2 py-1 rounded cursor-pointer hover:bg-blue-100' }, 
+                                    '¿Cómo mejorar más?'),
+                                h('span', { className: 'text-xs bg-white px-2 py-1 rounded cursor-pointer hover:bg-blue-100' }, 
+                                    'Compara con la industria')
+                            )
+                        ),
                         h('div', { className: 'chat-container bg-gray-50 rounded-lg p-4 mb-4' },
                             messages.map((msg, i) =>
                                 h('div', {

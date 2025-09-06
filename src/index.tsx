@@ -181,12 +181,76 @@ app.post('/api/chat', async (c) => {
   }
   
   try {
-    const systemPrompt = `Eres un experto en eficiencia energética y ahorro de energía industrial. 
-    Especializado en el uso de variadores de frecuencia (drives), reactores y guardamotores.
-    Ayudas a analizar y optimizar el consumo energético, calcular ROI y hacer recomendaciones específicas.
-    Siempre responde en español y de manera profesional pero amigable.
+    let contextualInfo = "";
     
-    Contexto del cálculo actual (si está disponible): ${JSON.stringify(context)}`
+    // Si hay contexto de cálculos, crear un análisis detallado
+    if (context && context.results) {
+      const { inputs, results } = context;
+      
+      // Formatear números para mejor legibilidad
+      const fmt = (num: number) => Math.round(num).toLocaleString('es-ES');
+      
+      contextualInfo = `
+CONTEXTO DE CÁLCULO ACTUAL:
+
+📊 CONFIGURACIÓN DEL SISTEMA:
+- Motores: ${inputs.motors} unidades
+- Potencia: ${inputs.hpPerMotor} HP por motor (${(inputs.hpPerMotor * 0.746).toFixed(2)} kW)
+- Factor de carga: ${inputs.loadFactor}%
+- Horas de operación: ${fmt(inputs.operationHours)} horas/año
+- Tarifa eléctrica: $${inputs.electricityRate}/kWh
+- Horizonte del proyecto: ${inputs.projectHorizon} años
+
+⚡ CONSUMO ACTUAL:
+- Consumo energético: ${fmt(results.currentConsumption)} kWh/año
+- Costo de energía: $${fmt(results.currentEnergyCost)}/año
+
+💰 AHORROS CALCULADOS:
+- Ahorro energético (${inputs.driveSavings}% eficiencia): $${fmt(results.energySavings)}/año
+- Ahorro por paros evitados (${inputs.avoidedStopHours} horas): $${fmt(results.stopSavings)}/año
+- Ahorro en mantenimiento (${inputs.maintenanceReduction}% reducción): $${fmt(results.maintenanceSavings)}/año
+- AHORRO TOTAL ANUAL: $${fmt(results.totalAnnualSavings)}
+
+📈 ANÁLISIS FINANCIERO:
+- Inversión requerida: $${fmt(results.totalInvestment)}
+- Periodo de retorno (Payback): ${results.paybackYears.toFixed(2)} años (${Math.ceil(results.paybackYears * 12)} meses)
+- ROI Anual: ${results.annualROI.toFixed(1)}%
+- Ahorro acumulado en ${inputs.projectHorizon} años: $${fmt(results.accumulatedSavings)}
+
+🎯 MÉTRICAS CLAVE:
+- Eficiencia del sistema actual: ${inputs.loadFactor}%
+- Potencial de mejora con drives: ${inputs.driveSavings}%
+- Reducción de paros: ${inputs.avoidedStopHours} horas/año
+- Costo por hora de paro: $${fmt(inputs.stopCostPerHour)}
+- Inversión por motor: $${fmt(inputs.packageCostPerMotor)}
+`;
+    }
+    
+    const systemPrompt = `Eres un experto consultor en eficiencia energética industrial de GrupoABSA, especializado en:
+- Variadores de frecuencia (VFD/Drives)
+- Reactores de línea y carga
+- Guardamotores y protección eléctrica
+- Optimización de consumo energético
+- Cálculo de ROI y análisis financiero
+- Mejores prácticas de la industria
+
+Tu objetivo es ayudar a los usuarios a entender sus ahorros potenciales, optimizar sus sistemas y tomar decisiones informadas sobre inversiones en eficiencia energética.
+
+${contextualInfo ? `DATOS DEL CÁLCULO ACTUAL QUE DEBES ANALIZAR:
+${contextualInfo}
+
+IMPORTANTE: 
+- Siempre haz referencia a estos números específicos cuando respondas
+- Analiza si los resultados son buenos o pueden mejorarse
+- Sugiere optimizaciones basadas en los datos actuales
+- Compara con estándares de la industria
+- Si el ROI es muy alto (>1000%), explica por qué es tan favorable
+- Si el payback es menor a 1 año, enfatiza lo atractivo de la inversión
+` : 'No hay cálculos actuales. Ayuda al usuario a entender cómo usar la calculadora.'}
+
+Responde siempre en español, de manera profesional pero amigable.
+Usa bullets, negritas y emojis para hacer la información más digerible.
+Si el usuario pregunta sobre los resultados, analízalos en detalle y da recomendaciones específicas.`
     
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
