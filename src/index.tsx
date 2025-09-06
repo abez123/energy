@@ -2,10 +2,14 @@ import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 import { getClientHtml } from './client'
 import { getAppJs } from './app'
+import { RockwellProductSearch } from './meilisearch-client'
 
 type Bindings = {
   DB: D1Database;
   OPENAI_API_KEY?: string;
+  MEILISEARCH_HOST?: string;
+  MEILISEARCH_API_KEY?: string;
+  MEILISEARCH_INDEX?: string;
 }
 
 type CalculationInput = {
@@ -223,16 +227,25 @@ CONTEXTO DE CÁLCULO ACTUAL:
 - Reducción de paros: ${inputs.avoidedStopHours} horas/año
 - Costo por hora de paro: $${fmt(inputs.stopCostPerHour)}
 - Inversión por motor: $${fmt(inputs.packageCostPerMotor)}
-`;
+
+${context.products && context.products.length > 0 ? `🛒 PRODUCTOS ROCKWELL AUTOMATION RECOMENDADOS:
+${context.products.map(p => `- ${p.product.name} (${p.product.sku})
+  Precio: $${p.product.price} ${p.product.currency}
+  ${p.reason}
+  ${p.product.inStock ? '✅ En Stock' : '⚠️ Verificar disponibilidad'}`).join('\n')}
+
+${context.packageData ? `💼 PRECIO TOTAL DEL PAQUETE: $${context.packageData.total} ${context.packageData.currency}` : ''}
+` : ''}`;
     }
     
     const systemPrompt = `Eres un experto consultor en eficiencia energética industrial de GrupoABSA, especializado en:
-- Variadores de frecuencia (VFD/Drives)
+- Variadores de frecuencia (VFD/Drives) - especialmente PowerFlex de Rockwell Automation
 - Reactores de línea y carga
 - Guardamotores y protección eléctrica
 - Optimización de consumo energético
 - Cálculo de ROI y análisis financiero
 - Mejores prácticas de la industria
+- Productos y soluciones Rockwell Automation
 
 Tu objetivo es ayudar a los usuarios a entender sus ahorros potenciales, optimizar sus sistemas y tomar decisiones informadas sobre inversiones en eficiencia energética.
 
@@ -301,6 +314,91 @@ app.get('/api/history', async (c) => {
   } catch (error) {
     console.error('Database error:', error)
     return c.json({ history: [] })
+  }
+})
+
+// Search Rockwell products
+app.get('/api/products/search', async (c) => {
+  const query = c.req.query('q') || ''
+  const limit = parseInt(c.req.query('limit') || '10')
+  
+  const productSearch = new RockwellProductSearch(
+    c.env.MEILISEARCH_HOST,
+    c.env.MEILISEARCH_API_KEY,
+    c.env.MEILISEARCH_INDEX
+  )
+  
+  try {
+    const results = await productSearch.searchProducts(query, { limit })
+    return c.json(results)
+  } catch (error) {
+    console.error('Product search error:', error)
+    return c.json({ products: [], totalHits: 0, processingTime: 0, query })
+  }
+})
+
+// Get product by SKU
+app.get('/api/products/:sku', async (c) => {
+  const sku = c.req.param('sku')
+  
+  const productSearch = new RockwellProductSearch(
+    c.env.MEILISEARCH_HOST,
+    c.env.MEILISEARCH_API_KEY,
+    c.env.MEILISEARCH_INDEX
+  )
+  
+  try {
+    const product = await productSearch.getProductBySku(sku)
+    if (!product) {
+      return c.json({ error: 'Product not found' }, 404)
+    }
+    return c.json(product)
+  } catch (error) {
+    console.error('Product fetch error:', error)
+    return c.json({ error: 'Error fetching product' }, 500)
+  }
+})
+
+// Get product recommendations based on calculation
+app.post('/api/products/recommendations', async (c) => {
+  const { motors, hpPerMotor, applicationType } = await c.req.json()
+  
+  const productSearch = new RockwellProductSearch(
+    c.env.MEILISEARCH_HOST,
+    c.env.MEILISEARCH_API_KEY,
+    c.env.MEILISEARCH_INDEX
+  )
+  
+  try {
+    const recommendations = await productSearch.getRecommendations({
+      motors,
+      hpPerMotor,
+      applicationType
+    })
+    
+    return c.json({ recommendations })
+  } catch (error) {
+    console.error('Recommendations error:', error)
+    return c.json({ recommendations: [] })
+  }
+})
+
+// Calculate package price
+app.post('/api/products/package-price', async (c) => {
+  const { skus } = await c.req.json()
+  
+  const productSearch = new RockwellProductSearch(
+    c.env.MEILISEARCH_HOST,
+    c.env.MEILISEARCH_API_KEY,
+    c.env.MEILISEARCH_INDEX
+  )
+  
+  try {
+    const packagePrice = await productSearch.calculatePackagePrice(skus)
+    return c.json(packagePrice)
+  } catch (error) {
+    console.error('Package price error:', error)
+    return c.json({ total: 0, items: [], currency: 'USD' })
   }
 })
 

@@ -46,6 +46,14 @@
 - ✅ Esquema de tablas para históricos
 - ✅ Migraciones preparadas
 
+### 7. **Integración con Meilisearch - Productos Rockwell Automation** 🆕
+- ✅ Búsqueda de productos en catálogo Rockwell
+- ✅ Recomendaciones automáticas basadas en configuración de motores
+- ✅ Cálculo de precio total del paquete (drive + reactor + guardamotor)
+- ✅ Visualización de inventario y especificaciones técnicas
+- ✅ Actualización automática del costo de inversión con precios reales
+- ✅ Integración con chatbot para consultas de productos
+
 ## 📊 Rutas API Disponibles
 
 | Método | Ruta | Descripción | Parámetros |
@@ -56,6 +64,9 @@
 | GET | `/api/presets` | Obtener presets | - |
 | POST | `/api/chat` | Chat con IA | message, context |
 | GET | `/api/history` | Histórico de cálculos | - |
+| GET | `/api/products/search` | Buscar productos Rockwell | q (query), limit |
+| POST | `/api/products/recommendations` | Obtener recomendaciones | motors, hpPerMotor |
+| POST | `/api/products/package-price` | Calcular precio paquete | skus[] |
 
 ## 🛠 Arquitectura Técnica
 
@@ -64,6 +75,7 @@
 - **Frontend**: React 18 (sin build, usando CDN)
 - **Estilos**: TailwindCSS (CDN)
 - **Base de Datos**: Cloudflare D1 (SQLite)
+- **Búsqueda**: Meilisearch (catálogo de productos)
 - **IA**: OpenAI GPT-4 API
 - **Despliegue**: Cloudflare Pages/Workers
 - **PDF**: jsPDF
@@ -74,7 +86,9 @@ webapp/
 ├── src/
 │   ├── index.tsx      # Backend principal con Hono
 │   ├── app.ts         # Lógica React del frontend
-│   └── client.ts      # HTML base de la aplicación
+│   ├── client.ts      # HTML base de la aplicación
+│   ├── meilisearch-client.ts  # Cliente para búsqueda de productos
+│   └── products-ui.ts  # Componentes UI de productos
 ├── public/
 │   ├── index.html     # HTML completo (desarrollo)
 │   └── app.js         # JavaScript React (desarrollo)
@@ -88,13 +102,19 @@ webapp/
 ## 🔧 Configuración Requerida
 
 ### Variables de Entorno
-Para habilitar el chatbot con IA, configura:
+Para habilitar todas las funciones, configura:
 ```bash
 # Desarrollo local (.dev.vars)
 OPENAI_API_KEY=tu-api-key-aqui
+MEILISEARCH_HOST=https://tu-instancia.meilisearch.com
+MEILISEARCH_API_KEY=tu-meilisearch-key
+MEILISEARCH_INDEX=rockwell_products
 
 # Producción (Cloudflare Worker)
 npx wrangler secret put OPENAI_API_KEY
+npx wrangler secret put MEILISEARCH_HOST
+npx wrangler secret put MEILISEARCH_API_KEY
+npx wrangler secret put MEILISEARCH_INDEX
 
 # O directamente con el nombre del worker
 npx wrangler secret put OPENAI_API_KEY --name energy-calculator
@@ -114,8 +134,9 @@ npm run db:migrate:prod   # Producción
 
 ### Alta Prioridad
 1. **Configurar API Key de OpenAI** para habilitar chatbot completo
-2. **Desplegar a Cloudflare Pages** para acceso público
-3. **Configurar GitHub** para control de versiones
+2. **Configurar Meilisearch** con datos reales de productos Rockwell
+3. **Desplegar a Cloudflare Pages** para acceso público
+4. **Configurar GitHub** para control de versiones
 
 ### Mejoras Futuras
 1. **Gráficos interactivos** con Chart.js o Recharts
@@ -166,6 +187,7 @@ git push origin main
 ### Limitaciones Actuales
 - Chatbot requiere API key de OpenAI configurada
 - Base de datos D1 requiere configuración en Cloudflare
+- Búsqueda de productos usa datos mock hasta configurar Meilisearch real
 - Máximo 10MB de bundle para Cloudflare Workers
 - Límite de 10ms CPU por request (plan gratuito)
 

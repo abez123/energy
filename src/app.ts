@@ -28,6 +28,10 @@ const EnergyCalculator = () => {
     ]);
     const [inputMessage, setInputMessage] = useState('');
     const [chatLoading, setChatLoading] = useState(false);
+    const [showProducts, setShowProducts] = useState(false);
+    const [productsLoading, setProductsLoading] = useState(false);
+    const [products, setProducts] = useState([]);
+    const [packageData, setPackageData] = useState(null);
 
     useEffect(() => {
         loadPresets();
@@ -71,10 +75,57 @@ const EnergyCalculator = () => {
             });
             const data = await response.json();
             setResults(data);
+            // Auto-mostrar productos después del cálculo
+            if (data) {
+                loadProductRecommendations();
+            }
         } catch (error) {
             console.error('Error:', error);
         } finally {
             setCalculating(false);
+        }
+    };
+
+    const loadProductRecommendations = async () => {
+        setShowProducts(true);
+        setProductsLoading(true);
+        
+        try {
+            // Obtener recomendaciones basadas en la configuración actual
+            const response = await fetch('/api/products/recommendations', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    motors: inputs.motors, 
+                    hpPerMotor: inputs.hpPerMotor 
+                })
+            });
+            
+            const data = await response.json();
+            if (data.recommendations) {
+                setProducts(data.recommendations);
+                
+                // Calcular precio total del paquete
+                const skus = data.recommendations.map(r => r.product.sku);
+                const packageResponse = await fetch('/api/products/package-price', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ skus })
+                });
+                
+                const pkgData = await packageResponse.json();
+                setPackageData(pkgData);
+                
+                // Actualizar el input de costo del paquete
+                if (pkgData.total > 0) {
+                    const costPerMotor = Math.round(pkgData.total / inputs.motors);
+                    setInputs(prev => ({ ...prev, packageCostPerMotor: costPerMotor }));
+                }
+            }
+        } catch (error) {
+            console.error('Error loading products:', error);
+        } finally {
+            setProductsLoading(false);
         }
     };
 
@@ -92,7 +143,12 @@ const EnergyCalculator = () => {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     message: userMessage,
-                    context: results ? { inputs, results } : null
+                    context: results ? { 
+                        inputs, 
+                        results,
+                        products: products.length > 0 ? products : undefined,
+                        packageData: packageData || undefined
+                    } : null
                 })
             });
             const data = await response.json();
@@ -401,6 +457,117 @@ const EnergyCalculator = () => {
                         ) : h('div', { className: 'text-center py-12 text-gray-500' },
                             h('i', { className: 'fas fa-chart-area text-6xl mb-4 opacity-30' }),
                             h('p', null, 'Configura y calcula para ver resultados')
+                        ),
+                        
+                        // Botón para mostrar productos recomendados
+                        results && !showProducts && h('button', {
+                            onClick: loadProductRecommendations,
+                            className: 'mt-4 w-full px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition'
+                        }, 
+                            h('i', { className: 'fas fa-shopping-cart mr-2' }),
+                            'Ver Productos Rockwell Recomendados'
+                        ),
+                        
+                        // Sección de productos
+                        showProducts && h('div', { className: 'mt-6 bg-white rounded-lg shadow-lg p-6' },
+                            h('h3', { className: 'text-xl font-bold mb-4' },
+                                h('i', { className: 'fas fa-shopping-cart mr-2' }),
+                                'Productos Rockwell Automation Recomendados'
+                            ),
+                            
+                            productsLoading ? h('div', { className: 'text-center py-8' },
+                                h('div', { className: 'loader mx-auto mb-2' }),
+                                h('p', { className: 'text-gray-600' }, 'Buscando productos recomendados...')
+                            ) : products.length > 0 ? h('div', null,
+                                h('div', { className: 'mb-4 bg-blue-50 border-l-4 border-blue-500 p-3' },
+                                    h('p', { className: 'text-sm text-blue-800' },
+                                        h('i', { className: 'fas fa-info-circle mr-2' }),
+                                        'Basado en tu configuración, estos productos Rockwell te darán los mejores resultados'
+                                    )
+                                ),
+                                
+                                // Grid de productos
+                                h('div', { className: 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4' },
+                                    products.map((rec, i) => {
+                                        const product = rec.product;
+                                        return h('div', { 
+                                            key: i,
+                                            className: 'bg-white border rounded-lg p-4 hover:shadow-lg transition' 
+                                        },
+                                            h('div', { className: 'mb-2' },
+                                                h('span', { className: 'inline-block px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded' },
+                                                    product.category
+                                                ),
+                                                product.inStock ? 
+                                                    h('span', { className: 'inline-block px-2 py-1 text-xs bg-green-100 text-green-800 rounded ml-1' },
+                                                        'En Stock'
+                                                    ) : 
+                                                    h('span', { className: 'inline-block px-2 py-1 text-xs bg-red-100 text-red-800 rounded ml-1' },
+                                                        'Agotado'
+                                                    )
+                                            ),
+                                            h('h4', { className: 'font-bold text-sm mb-1' }, product.name),
+                                            h('p', { className: 'text-xs text-gray-600 mb-2' }, 'SKU: ' + product.sku),
+                                            h('p', { className: 'text-xs text-gray-700 mb-3' }, product.description),
+                                            
+                                            product.specifications && h('div', { className: 'text-xs bg-gray-50 rounded p-2 mb-3' },
+                                                product.specifications.power && h('div', null, '⚡ ' + product.specifications.power),
+                                                product.specifications.voltage && h('div', null, '🔌 ' + product.specifications.voltage),
+                                                product.specifications.current && h('div', null, '🔋 ' + product.specifications.current)
+                                            ),
+                                            
+                                            h('div', { className: 'flex justify-between items-center' },
+                                                h('span', { className: 'text-lg font-bold text-green-600' },
+                                                    '$' + product.price.toLocaleString() + ' ' + product.currency
+                                                ),
+                                                product.inventory && h('span', { className: 'text-xs text-gray-500' },
+                                                    'Stock: ' + product.inventory
+                                                )
+                                            ),
+                                            
+                                            h('div', { className: 'mt-2 pt-2 border-t' },
+                                                h('p', { className: 'text-xs text-blue-600' },
+                                                    h('i', { className: 'fas fa-check-circle mr-1' }),
+                                                    rec.reason
+                                                ),
+                                                rec.savings && h('p', { className: 'text-xs text-green-600 mt-1' },
+                                                    h('i', { className: 'fas fa-dollar-sign mr-1' }),
+                                                    'Ahorro estimado: $' + rec.savings.toFixed(0) + '/año'
+                                                )
+                                            )
+                                        );
+                                    })
+                                ),
+                                
+                                // Resumen del paquete
+                                packageData && packageData.total > 0 && h('div', { className: 'mt-6 bg-gray-50 rounded-lg p-4' },
+                                    h('h3', { className: 'font-bold text-lg mb-3' },
+                                        h('i', { className: 'fas fa-box mr-2' }),
+                                        'Resumen del Paquete Completo'
+                                    ),
+                                    h('div', { className: 'space-y-2 mb-4' },
+                                        packageData.items.map((item, i) => 
+                                            h('div', { key: i, className: 'flex justify-between text-sm' },
+                                                h('span', null, item.name),
+                                                h('span', { className: 'font-semibold' }, '$' + item.price.toLocaleString())
+                                            )
+                                        )
+                                    ),
+                                    h('div', { className: 'border-t pt-3' },
+                                        h('div', { className: 'flex justify-between items-center' },
+                                            h('span', { className: 'text-lg font-semibold' }, 'Total del Paquete:'),
+                                            h('span', { className: 'text-2xl font-bold text-green-600' }, 
+                                                '$' + packageData.total.toLocaleString() + ' ' + packageData.currency
+                                            )
+                                        ),
+                                        h('p', { className: 'text-xs text-gray-500 mt-1' },
+                                            '* Precios sujetos a disponibilidad. Contacta a tu distribuidor autorizado Rockwell.'
+                                        )
+                                    )
+                                )
+                            ) : h('div', { className: 'text-center py-8 text-gray-500' },
+                                h('p', null, 'No se encontraron productos para esta configuración')
+                            )
                         )
                     ),
 
@@ -421,7 +588,9 @@ const EnergyCalculator = () => {
                                 h('span', { className: 'text-xs bg-white px-2 py-1 rounded cursor-pointer hover:bg-blue-100' }, 
                                     '¿Cómo mejorar más?'),
                                 h('span', { className: 'text-xs bg-white px-2 py-1 rounded cursor-pointer hover:bg-blue-100' }, 
-                                    'Compara con la industria')
+                                    'Compara con la industria'),
+                                products.length > 0 && h('span', { className: 'text-xs bg-white px-2 py-1 rounded cursor-pointer hover:bg-blue-100' }, 
+                                    '¿Qué productos Rockwell me recomiendas?')
                             )
                         ),
                         h('div', { className: 'chat-container bg-gray-50 rounded-lg p-4 mb-4' },
