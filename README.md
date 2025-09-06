@@ -6,7 +6,7 @@
 
 ## 🌐 URLs de Acceso
 - **Desarrollo (Sandbox)**: https://3000-iatagrmdafp5tkpz5ryxg-6532622b.e2b.dev
-- **Producción**: Pendiente de despliegue en Cloudflare Pages
+- **Producción (Cloudflare Worker)**: https://energy-calculator.hola-245.workers.dev
 - **GitHub**: Pendiente de configuración
 
 ## ✅ Funcionalidades Completadas
@@ -92,8 +92,11 @@ Para habilitar el chatbot con IA, configura:
 # Desarrollo local (.dev.vars)
 OPENAI_API_KEY=tu-api-key-aqui
 
-# Producción
-npx wrangler pages secret put OPENAI_API_KEY --project-name energy-calculator
+# Producción (Cloudflare Worker)
+npx wrangler secret put OPENAI_API_KEY
+
+# O directamente con el nombre del worker
+npx wrangler secret put OPENAI_API_KEY --name energy-calculator
 ```
 
 ### Base de Datos D1
@@ -135,8 +138,14 @@ pm2 logs --nostream    # Ver logs
 npm run db:migrate:local    # Migraciones locales
 npm run db:seed            # Cargar datos de prueba
 
-# Despliegue
-npm run deploy:prod    # Desplegar a Cloudflare
+# Despliegue a Cloudflare Worker
+npx wrangler deploy --config wrangler-worker.toml
+
+# Configurar secretos en producción
+npx wrangler secret put OPENAI_API_KEY
+
+# Ver logs en tiempo real
+npx wrangler tail energy-calculator
 
 # Git
 git add . && git commit -m "mensaje"

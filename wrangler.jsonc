@@ -1,16 +1,7 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "energy-savings-calculator",
+  "name": "energy-calculator-absa",
   "compatibility_date": "2024-01-01",
   "pages_build_output_dir": "./dist",
-  "compatibility_flags": ["nodejs_compat"],
-  
-  // D1 Database for storing calculations history
-  "d1_databases": [
-    {
-      "binding": "DB",
-      "database_name": "energy-calculator-production",
-      "database_id": "placeholder-will-create-later"
-    }
-  ]
+  "compatibility_flags": ["nodejs_compat"]
 }
