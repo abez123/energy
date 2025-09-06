@@ -297,32 +297,32 @@ const EnergyCalculator = () => {
     const formatNumber = (num) => num.toFixed(0).replace(/\\B(?=(\\d{3})+(?!\\d))/g, ".");
 
     return h('div', { className: 'min-h-screen bg-gray-50' },
-        // Header
-        h('header', { className: 'gradient-bg text-white py-6 px-4' },
+        // Header - Responsive
+        h('header', { className: 'gradient-bg text-white py-4 sm:py-6 px-4' },
             h('div', { className: 'max-w-7xl mx-auto' },
-                h('div', { className: 'flex items-center justify-between mb-4' },
-                    h('div', { className: 'logo-container' },
+                h('div', { className: 'flex flex-col sm:flex-row items-center justify-between mb-4 gap-2' },
+                    h('div', { className: 'logo-container flex-col sm:flex-row text-center sm:text-left' },
                         h('img', { 
                             src: 'https://grupoabsacdn-1521b.kxcdn.com/web/image/res.company/1/logo?unique=77c3fa7',
                             alt: 'GrupoABSA Logo',
-                            className: 'logo-img'
+                            className: 'logo-img mx-auto sm:mx-0'
                         }),
                         h('div', null,
-                            h('h1', { className: 'text-2xl font-bold' }, 'GrupoABSA'),
-                            h('p', { className: 'text-sm opacity-90' }, 'Soluciones Energéticas')
+                            h('h1', { className: 'text-xl sm:text-2xl font-bold' }, 'GrupoABSA'),
+                            h('p', { className: 'text-xs sm:text-sm opacity-90' }, 'Soluciones Energéticas')
                         )
                     ),
-                    h('div', { className: 'text-right' },
-                        h('p', { className: 'text-sm opacity-80' }, 'Calculadora Profesional'),
-                        h('p', { className: 'text-xs opacity-70 mt-1' }, 'Drive + Reactor + Guardamotor')
+                    h('div', { className: 'text-center sm:text-right' },
+                        h('p', { className: 'text-xs sm:text-sm opacity-80' }, 'Calculadora Profesional'),
+                        h('p', { className: 'text-xs opacity-70 mt-1 hidden sm:block' }, 'Drive + Reactor + Guardamotor')
                     )
                 ),
                 h('div', { className: 'text-center' },
-                    h('h2', { className: 'text-3xl font-bold mb-2' },
-                        h('i', { className: 'fas fa-bolt mr-3' }),
+                    h('h2', { className: 'text-xl sm:text-2xl lg:text-3xl font-bold mb-2' },
+                        h('i', { className: 'fas fa-bolt mr-2 sm:mr-3' }),
                         'Simulador de Ahorro Energético'
                     ),
-                    h('p', { className: 'text-lg opacity-90' }, 'Transforma costos ocultos en ahorros medibles con ROI claro')
+                    h('p', { className: 'text-sm sm:text-base lg:text-lg opacity-90 px-2 sm:px-0' }, 'Transforma costos ocultos en ahorros medibles con ROI claro')
                 )
             )
         ),
@@ -411,45 +411,45 @@ const EnergyCalculator = () => {
                                         \`$\${formatNumber(results.currentEnergyCost)}/año\`)
                                 )
                             ),
-                            // Savings Cards
-                            h('div', { className: 'grid grid-cols-3 gap-4 mb-6' },
-                                h('div', { className: 'metric-card bg-green-50 p-4 rounded border-l-4 border-green-500' },
-                                    h('p', { className: 'text-sm text-green-700' }, 'Ahorro energético'),
-                                    h('p', { className: 'text-xl font-bold text-green-800' }, 
+                            // Savings Cards - Responsive grid
+                            h('div', { className: 'grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6' },
+                                h('div', { className: 'metric-card bg-green-50 p-3 sm:p-4 rounded border-l-4 border-green-500' },
+                                    h('p', { className: 'text-xs sm:text-sm text-green-700' }, 'Ahorro energético'),
+                                    h('p', { className: 'text-lg sm:text-xl font-bold text-green-800' }, 
                                         \`$\${formatNumber(results.energySavings)}\`)
                                 ),
-                                h('div', { className: 'metric-card bg-blue-50 p-4 rounded border-l-4 border-blue-500' },
-                                    h('p', { className: 'text-sm text-blue-700' }, 'Paros evitados'),
-                                    h('p', { className: 'text-xl font-bold text-blue-800' }, 
+                                h('div', { className: 'metric-card bg-blue-50 p-3 sm:p-4 rounded border-l-4 border-blue-500' },
+                                    h('p', { className: 'text-xs sm:text-sm text-blue-700' }, 'Paros evitados'),
+                                    h('p', { className: 'text-lg sm:text-xl font-bold text-blue-800' }, 
                                         \`$\${formatNumber(results.stopSavings)}\`)
                                 ),
-                                h('div', { className: 'metric-card bg-purple-50 p-4 rounded border-l-4 border-purple-500' },
-                                    h('p', { className: 'text-sm text-purple-700' }, 'Mantenimiento'),
-                                    h('p', { className: 'text-xl font-bold text-purple-800' }, 
+                                h('div', { className: 'metric-card bg-purple-50 p-3 sm:p-4 rounded border-l-4 border-purple-500' },
+                                    h('p', { className: 'text-xs sm:text-sm text-purple-700' }, 'Mantenimiento'),
+                                    h('p', { className: 'text-lg sm:text-xl font-bold text-purple-800' }, 
                                         \`$\${formatNumber(results.maintenanceSavings)}\`)
                                 )
                             ),
-                            // Main Metrics
-                            h('div', { className: 'bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg p-6' },
-                                h('div', { className: 'grid grid-cols-4 gap-4' },
-                                    h('div', { className: 'text-center' },
-                                        h('p', { className: 'text-sm opacity-90' }, 'Ahorro Total'),
-                                        h('p', { className: 'text-2xl font-bold' }, 
+                            // Main Metrics - Responsive grid
+                            h('div', { className: 'bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg p-4 sm:p-6' },
+                                h('div', { className: 'grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-2' },
+                                    h('div', { className: 'text-center p-2' },
+                                        h('p', { className: 'text-xs sm:text-sm opacity-90 mb-1' }, 'Ahorro Total'),
+                                        h('p', { className: 'text-lg sm:text-xl lg:text-2xl font-bold break-all' }, 
                                             \`$\${formatNumber(results.totalAnnualSavings)}\`)
                                     ),
-                                    h('div', { className: 'text-center' },
-                                        h('p', { className: 'text-sm opacity-90' }, 'Inversión'),
-                                        h('p', { className: 'text-2xl font-bold' }, 
+                                    h('div', { className: 'text-center p-2' },
+                                        h('p', { className: 'text-xs sm:text-sm opacity-90 mb-1' }, 'Inversión'),
+                                        h('p', { className: 'text-lg sm:text-xl lg:text-2xl font-bold break-all' }, 
                                             \`$\${formatNumber(results.totalInvestment)}\`)
                                     ),
-                                    h('div', { className: 'text-center' },
-                                        h('p', { className: 'text-sm opacity-90' }, 'Payback'),
-                                        h('p', { className: 'text-2xl font-bold' }, 
+                                    h('div', { className: 'text-center p-2' },
+                                        h('p', { className: 'text-xs sm:text-sm opacity-90 mb-1' }, 'Payback'),
+                                        h('p', { className: 'text-lg sm:text-xl lg:text-2xl font-bold' }, 
                                             \`\${results.paybackYears.toFixed(2)} años\`)
                                     ),
-                                    h('div', { className: 'text-center' },
-                                        h('p', { className: 'text-sm opacity-90' }, 'ROI Anual'),
-                                        h('p', { className: 'text-2xl font-bold' }, 
+                                    h('div', { className: 'text-center p-2' },
+                                        h('p', { className: 'text-xs sm:text-sm opacity-90 mb-1' }, 'ROI Anual'),
+                                        h('p', { className: 'text-lg sm:text-xl lg:text-2xl font-bold' }, 
                                             \`\${results.annualROI.toFixed(1)}%\`)
                                     )
                                 )
