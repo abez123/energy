@@ -8,7 +8,7 @@
 - **Producción (Cloudflare Pages)**: https://energy-calculator-absa.pages.dev
 - **Producción (Cloudflare Worker)**: https://energy-calculator.hola-245.workers.dev
 - **Desarrollo (Sandbox)**: https://3000-iatagrmdafp5tkpz5ryxg-6532622b.e2b.dev
-- **GitHub**: https://github.com/[tu-usuario]/energy
+- **GitHub**: https://github.com/abez123/energy
 
 ## ✅ Funcionalidades Completadas
 
