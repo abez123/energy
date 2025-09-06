@@ -193,6 +193,20 @@ export class RockwellProductSearch {
       
       // Filtrar y priorizar productos relevantes para ahorro energético
       mappedProducts = mappedProducts.sort((a, b) => {
+        // PRIMERO: Separar productos con inventario de los que no tienen
+        const aHasInventory = a.inventory > 0;
+        const bHasInventory = b.inventory > 0;
+        
+        // Si uno tiene inventario y el otro no, el que tiene inventario va primero
+        if (aHasInventory && !bHasInventory) return -1;
+        if (!aHasInventory && bHasInventory) return 1;
+        
+        // Si ambos tienen inventario, ordenar por cantidad ascendente (menor a mayor)
+        if (aHasInventory && bHasInventory) {
+          return a.inventory - b.inventory; // Orden ascendente por inventario
+        }
+        
+        // Para productos sin inventario, aplicar otros criterios
         // Priorizar productos con precio
         if (a.price > 0 && b.price === 0) return -1;
         if (a.price === 0 && b.price > 0) return 1;
@@ -204,10 +218,6 @@ export class RockwellProductSearch {
         // Priorizar productos con URL de tienda
         if (a.url_aol && !b.url_aol) return -1;
         if (!a.url_aol && b.url_aol) return 1;
-        
-        // Priorizar productos con inventario
-        if (a.inventory > 0 && b.inventory === 0) return -1;
-        if (a.inventory === 0 && b.inventory > 0) return 1;
         
         return 0;
       });
@@ -265,13 +275,28 @@ export class RockwellProductSearch {
     // Si no hay resultados específicos, buscar PowerFlex general y filtrar
     if (driveResults.products.length === 0) {
       driveQuery = 'PowerFlex 525 753 755 variador drive';
-      driveResults = await this.searchProducts(driveQuery, { limit: 10 });
+      driveResults = await this.searchProducts(driveQuery, { limit: 20 });
       
-      // Filtrar por HP más cercano
-      driveResults.products = driveResults.products.filter(p => {
-        const productHP = this.extractHP(p.name + ' ' + p.description);
-        return productHP > 0 && Math.abs(productHP - params.hpPerMotor) <= 5;
-      }).slice(0, 3);
+      // Filtrar por HP más cercano y ordenar por inventario
+      driveResults.products = driveResults.products
+        .filter(p => {
+          const productHP = this.extractHP(p.name + ' ' + p.description);
+          return productHP > 0 && Math.abs(productHP - params.hpPerMotor) <= 5;
+        })
+        .sort((a, b) => {
+          // Priorizar productos con inventario disponible
+          if (a.inventory > 0 && b.inventory === 0) return -1;
+          if (a.inventory === 0 && b.inventory > 0) return 1;
+          // Si ambos tienen inventario, ordenar por cantidad ascendente
+          if (a.inventory > 0 && b.inventory > 0) {
+            return a.inventory - b.inventory;
+          }
+          // Luego por precio
+          if (a.price > 0 && b.price === 0) return -1;
+          if (a.price === 0 && b.price > 0) return 1;
+          return 0;
+        })
+        .slice(0, 3);
     }
     
     driveResults.products.forEach(product => {
@@ -353,6 +378,29 @@ export class RockwellProductSearch {
       });
     }
 
+    // Ordenar recomendaciones finales: primero con inventario (ascendente), luego sin inventario
+    recommendations.sort((a, b) => {
+      const aHasInventory = a.product.inventory > 0;
+      const bHasInventory = b.product.inventory > 0;
+      
+      // Productos con inventario primero
+      if (aHasInventory && !bHasInventory) return -1;
+      if (!aHasInventory && bHasInventory) return 1;
+      
+      // Si ambos tienen inventario, ordenar por cantidad ascendente (menor a mayor)
+      if (aHasInventory && bHasInventory) {
+        return a.product.inventory - b.product.inventory;
+      }
+      
+      // Para productos sin inventario, ordenar por precio
+      if (!aHasInventory && !bHasInventory) {
+        if (a.product.price > 0 && b.product.price === 0) return -1;
+        if (a.product.price === 0 && b.product.price > 0) return 1;
+      }
+      
+      return 0;
+    });
+    
     return recommendations.slice(0, 10); // Máximo 10 recomendaciones
   }
 

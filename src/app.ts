@@ -498,13 +498,23 @@ const EnergyCalculator = () => {
                                                 h('span', { className: 'inline-block px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded' },
                                                     product.category
                                                 ),
-                                                product.inStock ? 
-                                                    h('span', { className: 'inline-block px-2 py-1 text-xs bg-green-100 text-green-800 rounded ml-1' },
-                                                        'En Stock'
+                                                product.inventory > 0 ? 
+                                                    h('span', { 
+                                                        className: product.inventory <= 5 ? 
+                                                            'inline-block px-2 py-1 text-xs bg-orange-100 text-orange-800 rounded ml-1 font-bold' :
+                                                            'inline-block px-2 py-1 text-xs bg-green-100 text-green-800 rounded ml-1'
+                                                    },
+                                                        product.inventory <= 5 ? 
+                                                            '⚠️ Últimas ' + product.inventory :
+                                                            '✅ ' + product.inventory + ' disponibles'
                                                     ) : 
-                                                    h('span', { className: 'inline-block px-2 py-1 text-xs bg-red-100 text-red-800 rounded ml-1' },
-                                                        'Agotado'
-                                                    )
+                                                    product.inStock ?
+                                                        h('span', { className: 'inline-block px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded ml-1' },
+                                                            '📦 Bajo pedido'
+                                                        ) :
+                                                        h('span', { className: 'inline-block px-2 py-1 text-xs bg-red-100 text-red-800 rounded ml-1' },
+                                                            '❌ Agotado'
+                                                        )
                                             ),
                                             h('h4', { className: 'font-bold text-sm mb-1' }, product.name),
                                             h('p', { className: 'text-xs text-gray-600 mb-2' }, 'SKU: ' + product.sku),
@@ -520,8 +530,14 @@ const EnergyCalculator = () => {
                                                 h('span', { className: 'text-lg font-bold text-green-600' },
                                                     '$' + product.price.toLocaleString() + ' ' + product.currency
                                                 ),
-                                                product.inventory && h('span', { className: 'text-xs text-gray-500' },
-                                                    'Stock: ' + product.inventory
+                                                product.inventory > 0 && h('span', { 
+                                                    className: product.inventory <= 5 ? 
+                                                        'text-xs font-bold text-orange-600' : 
+                                                        'text-xs font-bold text-green-600' 
+                                                },
+                                                    product.inventory <= 5 ? 
+                                                        '⚠️ Solo ' + product.inventory + ' unidades' :
+                                                        '✅ Stock: ' + product.inventory + ' unidades'
                                                 )
                                             ),
                                             
