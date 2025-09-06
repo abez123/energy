@@ -3,13 +3,28 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:sandbox": "wrangler pages dev dist --ip 0.0.0.0 --port 3000",
     "build": "vite build",
-    "preview": "wrangler pages dev",
-    "deploy": "npm run build && wrangler pages deploy",
+    "preview": "wrangler pages dev dist",
+    "deploy": "npm run build && wrangler pages deploy dist",
+    "deploy:prod": "npm run build && wrangler pages deploy dist --project-name energy-calculator",
+    "clean-port": "fuser -k 3000/tcp 2>/dev/null || true",
+    "test": "curl http://localhost:3000",
+    "db:create": "wrangler d1 create energy-calculator-production",
+    "db:migrate:local": "wrangler d1 migrations apply energy-calculator-production --local",
+    "db:migrate:prod": "wrangler d1 migrations apply energy-calculator-production",
     "cf-typegen": "wrangler types --env-interface CloudflareBindings"
   },
   "dependencies": {
-    "hono": "^4.9.6"
+    "@types/react": "^19.1.12",
+    "@types/react-dom": "^19.1.9",
+    "hono": "^4.9.6",
+    "html2canvas": "^1.4.1",
+    "jspdf": "^3.0.2",
+    "lucide-react": "^0.542.0",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "recharts": "^3.1.2"
   },
   "devDependencies": {
     "@hono/vite-build": "^1.2.0",
