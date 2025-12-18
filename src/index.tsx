@@ -174,6 +174,54 @@ app.get('/api/presets', (c) => {
   return c.json(presets)
 })
 
+// Load Profile Calculator endpoint
+app.post('/api/calculate-load-profile', async (c) => {
+  try {
+    const input = await c.req.json()
+    
+    // Import the calculator
+    const { calculateWithLoadProfile } = await import('./load-profile-calculator')
+    
+    // Calcular con perfil de carga
+    const result = calculateWithLoadProfile(input)
+    
+    // Save to database if available
+    if (c.env.DB) {
+      try {
+        await c.env.DB.prepare(`
+          CREATE TABLE IF NOT EXISTS load_profile_calculations (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            input TEXT NOT NULL,
+            result TEXT NOT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+          )
+        `).run()
+        
+        await c.env.DB.prepare(`
+          INSERT INTO load_profile_calculations (input, result) VALUES (?, ?)
+        `).bind(JSON.stringify(input), JSON.stringify(result)).run()
+      } catch (dbError) {
+        console.error('Database error:', dbError)
+      }
+    }
+    
+    return c.json(result)
+  } catch (error) {
+    console.error('Load profile calculation error:', error)
+    return c.json({ error: 'Error en el cálculo con perfil de carga' }, 400)
+  }
+})
+
+// Get load profile presets
+app.get('/api/load-profile-presets', async (c) => {
+  const { PRESET_LOAD_PROFILES } = await import('./load-profile-calculator')
+  
+  return c.json({
+    presets: PRESET_LOAD_PROFILES,
+    flowLevels: [1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1]
+  })
+})
+
 // Chat endpoint for AI assistance
 app.post('/api/chat', async (c) => {
   const { message, context } = await c.req.json()
