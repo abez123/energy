@@ -31,6 +31,7 @@ export interface RockwellProduct {
   juarez?: number;
   sale_price_usd?: string;
   url_aol?: string;
+  url_img?: string;
   
   // Campos mapeados para compatibilidad con la UI
   id: string;
@@ -43,6 +44,7 @@ export interface RockwellProduct {
   inventory: number;
   inStock: boolean;
   manufacturer: string;
+  imageUrl?: string;
   specifications?: {
     power?: string;
     voltage?: string;
@@ -138,6 +140,7 @@ export class RockwellProductSearch {
       juarez: hit.juarez,
       sale_price_usd: hit.sale_price_usd,
       url_aol: hit.url_aol,
+      url_img: hit.url_img,
       
       // Campos mapeados para la UI
       id: String(hit.id_item),
@@ -150,6 +153,7 @@ export class RockwellProductSearch {
       inventory: totalInventory,
       inStock: totalInventory > 0 || hit.publicado_website,
       manufacturer: hit.marca || hit.marca_tematica || 'Rockwell Automation',
+      imageUrl: hit.url_img || undefined,
       specifications: Object.keys(specs).length > 0 ? specs : undefined
     };
   }

@@ -668,7 +668,19 @@ const LoadProfileCalculator = () => {
                                 key: idx,
                                 className: 'border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow'
                             },
-                                h('div', { className: 'flex justify-between items-start' },
+                                h('div', { className: 'flex gap-4 items-start' },
+                                    // Imagen del producto
+                                    rec.product.imageUrl && h('div', { className: 'flex-shrink-0' },
+                                        h('img', {
+                                            src: rec.product.imageUrl,
+                                            alt: rec.product.name,
+                                            className: 'w-24 h-24 object-contain rounded border border-gray-200',
+                                            onError: (e) => {
+                                                e.target.style.display = 'none';
+                                            }
+                                        })
+                                    ),
+                                    // Información del producto
                                     h('div', { className: 'flex-1' },
                                         h('h3', { className: 'font-bold text-lg text-gray-800' }, 
                                             rec.product.name
@@ -684,7 +696,8 @@ const LoadProfileCalculator = () => {
                                             )
                                         )
                                     ),
-                                    h('div', { className: 'text-right' },
+                                    // Precio e inventario
+                                    h('div', { className: 'text-right flex-shrink-0' },
                                         h('p', { className: 'text-2xl font-bold text-green-600' }, 
                                             \`$\${rec.product.price.toLocaleString('es-ES')}\`
                                         ),
