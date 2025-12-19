@@ -696,16 +696,13 @@ const LoadProfileCalculator = () => {
                                             )
                                         )
                                     ),
-                                    // Precio e inventario
+                                    // Precio
                                     h('div', { className: 'text-right flex-shrink-0' },
                                         h('p', { className: 'text-2xl font-bold text-green-600' }, 
                                             \`$\${rec.product.price.toLocaleString('es-ES')}\`
                                         ),
-                                        rec.product.inventory !== undefined && h('p', { 
-                                            className: \`text-sm \${rec.product.inStock ? 'text-green-600' : 'text-red-600'}\`
-                                        }, rec.product.inStock ? 
-                                            \`En stock: \${rec.product.inventory}\` : 
-                                            'Sin stock'
+                                        h('p', { className: 'text-xs text-gray-500 mt-1' }, 
+                                            'USD'
                                         )
                                     )
                                 ),
