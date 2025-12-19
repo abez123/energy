@@ -243,44 +243,38 @@ app.post('/api/chat', async (c) => {
       const fmt = (num: number) => Math.round(num).toLocaleString('es-ES');
       
       contextualInfo = `
-CONTEXTO DE CÁLCULO ACTUAL:
+CONTEXTO DE CÁLCULO ACTUAL (Ciclo de Operación):
 
-📊 CONFIGURACIÓN DEL SISTEMA:
-- Motores: ${inputs.motors} unidades
-- Potencia: ${inputs.hpPerMotor} HP por motor (${(inputs.hpPerMotor * 0.746).toFixed(2)} kW)
-- Factor de carga: ${inputs.loadFactor}%
-- Horas de operación: ${fmt(inputs.operationHours)} horas/año
-- Tarifa eléctrica: $${inputs.electricityRate}/kWh
-- Horizonte del proyecto: ${inputs.projectHorizon} años
+📊 CONFIGURACIÓN DEL MOTOR:
+- Cantidad de motores: ${inputs.cantidadMotores} unidad(es)
+- Potencia: ${inputs.hp} HP (${results.kw ? results.kw.toFixed(2) : 'N/A'} kW)
+- Eficiencia: ${inputs.eficiencia}%
+- Voltaje: ${inputs.voltaje}V
+- Horas de operación: ${fmt(inputs.horasAnio)} horas/año
+- Tarifa eléctrica: $${inputs.costoKwhUsd}/kWh
 
-⚡ CONSUMO ACTUAL:
-- Consumo energético: ${fmt(results.currentConsumption)} kWh/año
-- Costo de energía: $${fmt(results.currentEnergyCost)}/año
+⚡ CONSUMO Y COSTOS:
+A TENSIÓN PLENA (Sin VFD):
+- Consumo: ${fmt(results.consumoPlenaKwh)} kWh/año
+- Costo: $${fmt(results.consumoPlenaUsd)}/año
 
-💰 AHORROS CALCULADOS:
-- Ahorro energético (${inputs.driveSavings}% eficiencia): $${fmt(results.energySavings)}/año
-- Ahorro por paros evitados (${inputs.avoidedStopHours} horas): $${fmt(results.stopSavings)}/año
-- Ahorro en mantenimiento (${inputs.maintenanceReduction}% reducción): $${fmt(results.maintenanceSavings)}/año
-- AHORRO TOTAL ANUAL: $${fmt(results.totalAnnualSavings)}
+CON VARIADOR DE FRECUENCIA:
+- Consumo: ${fmt(results.consumoVfdKwh)} kWh/año
+- Costo: $${fmt(results.consumoVfdUsd)}/año
+
+💰 AHORROS:
+- Ahorro energético: ${fmt(results.ahorroKwh)} kWh/año
+- Ahorro económico: $${fmt(results.ahorroUsd)}/año
 
 📈 ANÁLISIS FINANCIERO:
-- Inversión requerida: $${fmt(results.totalInvestment)}
-- Periodo de retorno (Payback): ${results.paybackYears.toFixed(2)} años (${Math.ceil(results.paybackYears * 12)} meses)
-- ROI Anual: ${results.annualROI.toFixed(1)}%
-- Ahorro acumulado en ${inputs.projectHorizon} años: $${fmt(results.accumulatedSavings)}
-
-🎯 MÉTRICAS CLAVE:
-- Eficiencia del sistema actual: ${inputs.loadFactor}%
-- Potencial de mejora con drives: ${inputs.driveSavings}%
-- Reducción de paros: ${inputs.avoidedStopHours} horas/año
-- Costo por hora de paro: $${fmt(inputs.stopCostPerHour)}
-- Inversión por motor: $${fmt(inputs.packageCostPerMotor)}
+- Inversión requerida: $${fmt(inputs.inversionDriveInstalacion)}
+- ROI: ${results.roiAnios.toFixed(2)} años (${results.roiMeses.toFixed(1)} meses)
+- Porcentaje de ahorro: ${((results.ahorroKwh / results.consumoPlenaKwh) * 100).toFixed(1)}%
 
 ${context.products && context.products.length > 0 ? `🛒 PRODUCTOS ROCKWELL AUTOMATION RECOMENDADOS:
 ${context.products.map(p => `- ${p.product.name} (${p.product.sku})
   Precio: $${p.product.price} ${p.product.currency}
-  ${p.reason}
-  ${p.product.inStock ? '✅ En Stock' : '⚠️ Verificar disponibilidad'}`).join('\n')}
+  ${p.reason}`).join('\n')}
 
 ${context.packageData ? `💼 PRECIO TOTAL DEL PAQUETE: $${context.packageData.total} ${context.packageData.currency}` : ''}
 ` : ''}`;
@@ -288,6 +282,8 @@ ${context.packageData ? `💼 PRECIO TOTAL DEL PAQUETE: $${context.packageData.t
     
     const systemPrompt = `Eres un experto consultor en eficiencia energética industrial de GrupoABSA, especializado en:
 - Variadores de frecuencia (VFD/Drives) - especialmente PowerFlex de Rockwell Automation
+- Ley de Afinidad para bombas y ventiladores (Potencia ∝ Velocidad³)
+- Cálculos con perfil de carga (load profile)
 - Reactores de línea y carga
 - Guardamotores y protección eléctrica
 - Optimización de consumo energético
@@ -295,23 +291,24 @@ ${context.packageData ? `💼 PRECIO TOTAL DEL PAQUETE: $${context.packageData.t
 - Mejores prácticas de la industria
 - Productos y soluciones Rockwell Automation
 
-Tu objetivo es ayudar a los usuarios a entender sus ahorros potenciales, optimizar sus sistemas y tomar decisiones informadas sobre inversiones en eficiencia energética.
+Tu objetivo es ayudar a los usuarios a entender sus ahorros potenciales con variadores de frecuencia, especialmente en aplicaciones de bombas y ventiladores donde la Ley de Afinidad genera ahorros significativos.
 
 ${contextualInfo ? `DATOS DEL CÁLCULO ACTUAL QUE DEBES ANALIZAR:
 ${contextualInfo}
 
 IMPORTANTE: 
 - Siempre haz referencia a estos números específicos cuando respondas
-- Analiza si los resultados son buenos o pueden mejorarse
+- Explica cómo el perfil de carga (ciclo de operación) afecta los ahorros
+- Analiza si el ROI es atractivo (menos de 2 años es excelente)
 - Sugiere optimizaciones basadas en los datos actuales
-- Compara con estándares de la industria
-- Si el ROI es muy alto (>1000%), explica por qué es tan favorable
-- Si el payback es menor a 1 año, enfatiza lo atractivo de la inversión
-` : 'No hay cálculos actuales. Ayuda al usuario a entender cómo usar la calculadora.'}
+- Compara con estándares de la industria para bombas/ventiladores
+- Menciona que la Ley de Afinidad (Potencia ∝ Velocidad³) es clave para estos ahorros
+- Si el ROI es menor a 1 año, enfatiza lo excepcional de la inversión
+` : 'No hay cálculos actuales. Ayuda al usuario a entender cómo usar la calculadora con perfil de carga (ciclo de operación).'}
 
 Responde siempre en español, de manera profesional pero amigable.
 Usa bullets, negritas y emojis para hacer la información más digerible.
-Si el usuario pregunta sobre los resultados, analízalos en detalle y da recomendaciones específicas.`
+Si el usuario pregunta sobre los resultados, analízalos en detalle y da recomendaciones específicas sobre el perfil de carga y los productos Rockwell Automation.`
     
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
